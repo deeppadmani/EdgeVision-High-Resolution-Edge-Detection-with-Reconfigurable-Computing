@@ -1,0 +1,12 @@
+# Object files
+*.o
+
+# Executable
+FPGA_HPS
+
+# Backup files
+*~
+
+# IDE specific files (optional, but commonly ignored)
+.vscode/
+
