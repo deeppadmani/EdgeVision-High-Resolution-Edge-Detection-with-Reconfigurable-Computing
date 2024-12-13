@@ -27,6 +27,8 @@ int main(int argc, char *argv[])
     if(strcmp("-o",argv[1]) == 0)
         writeOutPutfile();
 
+    createDirectory("output.txt");
+
     int k,i,j,totalImg;
     totalImg = 2;
     double total_cpu_time_used = 0;
@@ -59,8 +61,8 @@ int main(int argc, char *argv[])
             baseFileName = lastSlash + 1;  // Skip the last slash to get just the filename
         }
         size_t baseNameLen = strlen(baseFileName);
-        char outputFileName[baseNameLen + 24];
-        if (snprintf(outputFileName, sizeof(outputFileName), "output/%.*s_output.bmp",
+        char outputFileName[baseNameLen + 30];
+        if (snprintf(outputFileName, sizeof(outputFileName), "output/%.*s_FPGAoutput.bmp",
             (int)(baseNameLen - 4), baseFileName) >= sizeof(outputFileName))
         {
             printf("Output filename too long\n");

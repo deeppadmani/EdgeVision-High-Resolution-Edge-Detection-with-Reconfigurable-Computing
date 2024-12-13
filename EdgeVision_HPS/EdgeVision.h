@@ -55,12 +55,12 @@ typedef struct tagBITMAPINFOHEADER {
 
 #define SIZE_BUFFER 3
 
-void sobel();
 unsigned char *LoadBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader,BITMAPFILEHEADER *bitmapFileHeader);
 void SaveBitmapFile(char *filename, unsigned char *bitmapData, BITMAPINFOHEADER *bitmapInfoHeader, BITMAPFILEHEADER *bitmapFileHeader);
 int createDirectory(const char *path);
 void print_image_header(const char* filename);
 void print_footer();
 void writeOutPutfile();
+void Sobel(unsigned char *input, unsigned char *output, int width, int height, int bytesPerPixel);
 
 #endif /* EDGEVISION_H */

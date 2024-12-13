@@ -5,63 +5,60 @@ unsigned char input_row[SIZE_BUFFER];
 unsigned char output_row;
 unsigned char line_buffer[SIZE_BUFFER][SIZE_BUFFER];
 
-void sobel()
+
+
+void Sobel(unsigned char *input, unsigned char *output, int width, int height, int bytesPerPixel) 
 {
-  unsigned int X, Y;
-  int sumX, sumY;
-  int SUM, rowOffset, colOffset;
-
-  char Gx[3][3] ={{1 ,0 ,-1},
-		  { 2, 0, -2},
-		  { 1, 0,-1}};
-
-  char Gy[3][3] ={{1, 2, 1},
-		  {0, 0, 0},
-		  {-1, -2, -1}};
-
-
-  /* Shifting line buffer */
-   for(Y=2;Y>0;Y--)
-   {
-        for(X=0;X< 3;X++)
-        {
-        line_buffer[X][Y-1]=line_buffer[X][Y];
-        }
-   }
-
-    //Reading new data into the line buffer
-    for(X=0; X<SIZE_BUFFER; X++)
-         line_buffer[X][2] = input_row[X];
-
-    sumX = 0;
-    sumY = 0;
-
-  // Convolution starts here
-  //-------X GRADIENT APPROXIMATION------
-  //-------Y GRADIENT APPROXIMATION------
-   for(rowOffset = -1; rowOffset <= 1; rowOffset++)
-   {
-        for(colOffset = -1; colOffset <=1; colOffset++)
-        {
-            sumX = sumX + line_buffer[1 +rowOffset][1-colOffset] * Gx[1+rowOffset][1+colOffset];
-            sumY = sumY + line_buffer[1 +rowOffset][1-colOffset] * Gy[1+rowOffset][1+colOffset];
-        }
+    // Input validation
+    if (!input || !output || width <= 0 || height <= 0 || bytesPerPixel <= 0) {
+        return;
     }
 
-    if(sumX < 0)      sumX = -sumX;
-    if(sumX > 255)    sumX = 255;
+    int Gx[3][3] = {{1, 0, -1},
+                    {2, 0, -2},
+                    {1, 0, -1}};
 
-    if(sumY < 0)      sumY = -sumY;
-    if(sumY > 255)    sumY = 255;
+    int Gy[3][3] = {{1, 2, 1},
+                    {0, 0, 0},
+                    {-1, -2, -1}};
+                    
+    // Clear output buffer first
+    memset(output, 0, width * height * bytesPerPixel);
 
-    SUM = sumX + sumY;
+    for (int row = 1; row < height - 1; row++) 
+    {
+        for (int col = 1; col < width - 1; col++) 
+        {
+            for (int channel = 0; channel < bytesPerPixel; channel++) 
+            {
+                int sumX = 0, sumY = 0;
+                
+                // Calculate index for current pixel's center position
+                const int centerIdx = (row * width * bytesPerPixel) + (col * bytesPerPixel) + channel;
 
-    if(SUM > 255)    SUM = 255;
+                for (int i = -1; i <= 1; i++) 
+                {
+                    for (int j = -1; j <= 1; j++) 
+                    {
+                        const int idx = ((row + i) * width * bytesPerPixel) + ((col + j) * bytesPerPixel) + channel;
+                        
+                        // Bounds check
+                        if (idx >= 0 && idx < (width * height * bytesPerPixel)) 
+                        {
+                            sumX += input[idx] * Gx[i + 1][j + 1];
+                            sumY += input[idx] * Gy[i + 1][j + 1];
+                        }
+                    }
+                }
 
-    /* Write filter result  to output port */
-    output_row =  (unsigned char)(255  - (unsigned char)(SUM));
+                int magnitude = abs(sumX) + abs(sumY);
+                if (magnitude > 255) magnitude = 255;
+                
+                output[centerIdx] = (255 - (unsigned char)magnitude);
+            }
+        }
+    }
 }
-
 
 /***********************
  **
@@ -129,7 +126,7 @@ unsigned char *LoadBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader
 
     //read in the bitmap image data
     bytesRead = fread(bitmapImage,1, bitmapInfoHeader->biSizeImage,filePtr);
-    printf("LOG: bytesRead :  %d\n", (int)bytesRead);
+    printf("\nLOG: bytesRead :  %d\n", (int)bytesRead);
 
     //make sure bitmap image data was read
     if (bitmapImage == NULL)
@@ -145,75 +142,89 @@ unsigned char *LoadBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader
 
 void SaveBitmapFile(char *filename, unsigned char *bitmapData, BITMAPINFOHEADER *bitmapInfoHeader, BITMAPFILEHEADER *bitmapFileHeader) 
 {
-    FILE *filePtr;
-    int bytesperline = 0;
-    int k,l;
-
-    k=sizeof(BITMAPFILEHEADER);
-    l=sizeof(BITMAPINFOHEADER);
-
-    if(-1 == createDirectory("output")) return;
-
-
-    bytesperline = bitmapInfoHeader->biWidth * (bitmapInfoHeader->biBitCount/8);
-    if( bytesperline & 0x0003)
-    { 
-        bytesperline |= 0x0003;
-        ++bytesperline;
+    if (!filename || !bitmapData || !bitmapInfoHeader || !bitmapFileHeader) {
+        return;
     }
 
-    int byteperpixel = 0;
-    byteperpixel = bitmapInfoHeader->biBitCount/8;
+    FILE *filePtr;
+    
+    // Calculate the correct bytes per line including padding
+    int bytesperline = bitmapInfoHeader->biWidth * (bitmapInfoHeader->biBitCount/8);
+    if (bytesperline % 4 != 0) {
+        bytesperline = (bytesperline + 3) & ~3;  // Round up to nearest multiple of 4
+    }
 
-    unsigned char *tk;
-    tk = (unsigned char *)calloc(1,bytesperline);
+    // Calculate correct file size
+    int headerSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+    int paletteSize = bitmapInfoHeader->biClrUsed * 4;
+    int imageSize = bytesperline * bitmapInfoHeader->biHeight;
 
-    bitmapFileHeader->bfSize= bitmapInfoHeader->biSize + (long)bytesperline* bitmapInfoHeader->biHeight;
-    bitmapFileHeader->bfOffBits = k+l+ 4* bitmapInfoHeader->biClrUsed;
-    bitmapFileHeader->bfSize = k+l+bitmapInfoHeader->biSizeImage;
+    // Update header information
+    bitmapFileHeader->bfType = 0x4D42;  // 'BM'
+    bitmapFileHeader->bfSize = headerSize + paletteSize + imageSize;
+    bitmapFileHeader->bfReserved = 0;
+    bitmapFileHeader->bfReserved2 = 0;
+    bitmapFileHeader->bfOffBits = headerSize + paletteSize;
 
+    // Update info header
+    bitmapInfoHeader->biSizeImage = imageSize;
 
-    // Open the BMP file for writing
+    // Open the file
     filePtr = fopen(filename, "wb");
     if (!filePtr) {
         perror("Error opening output BMP file");
         return;
     }
 
+    // Write headers
+    fwrite(bitmapFileHeader, sizeof(BITMAPFILEHEADER), 1, filePtr);
+    fwrite(bitmapInfoHeader, sizeof(BITMAPINFOHEADER), 1, filePtr);
 
-    fwrite(bitmapFileHeader, 1, sizeof(BITMAPFILEHEADER), filePtr);
-    fwrite(bitmapInfoHeader, 1,sizeof(BITMAPINFOHEADER), filePtr);
-    fwrite(biColourPalette,bitmapInfoHeader->biClrUsed*4,1,filePtr);
-
-    printf("\nOUTPUT IMAGE DETAILS:\n");
-    printf("---------------------");
-    printf("\nSize of info header : %d",bitmapInfoHeader->biSize);
-    printf("\nHorizontal width : %x",bitmapInfoHeader->biWidth);
-    printf("\nVertical height : %x",bitmapInfoHeader->biHeight);
-    printf("\nNum of planes : %d",bitmapInfoHeader->biPlanes);
-    printf("\nBits per pixel : %d",bitmapInfoHeader->biBitCount);
-    printf("\nCompression specs : %d",bitmapInfoHeader->biCompression);
-    printf("\nSize of the image : %d",bitmapInfoHeader->biSizeImage);
-    printf("\nThe num of colours used : %x\n",bitmapInfoHeader->biClrUsed);
-    printf("\n%s\n", "----------------------------------------------------------------");
-
-    int i, n = 0,j,x;
-    for(x=0; x<  byteperpixel ; x++)
-    {
-        for(i=0; i<= (bitmapInfoHeader->biHeight-1); i++)
-        { 
-            for(j=0;j<=bytesperline-1;j++)
-            {
-                tk[j] = bitmapData[n++];
-            }
-            // Write pixel data
-            fwrite(tk, 1,bytesperline , filePtr);
-        }
+    // Write color palette if present
+    if (bitmapInfoHeader->biClrUsed > 0) {
+        fwrite(biColourPalette, 4, bitmapInfoHeader->biClrUsed, filePtr);
     }
 
+    // Print debug information
+    printf("\nOUTPUT IMAGE DETAILS:\n");
+    printf("---------------------\n");
+    printf("Size of info header: %d\n", bitmapInfoHeader->biSize);
+    printf("Horizontal width: %d\n", bitmapInfoHeader->biWidth);
+    printf("Vertical height: %d\n", bitmapInfoHeader->biHeight);
+    printf("Bits per pixel: %d\n", bitmapInfoHeader->biBitCount);
+    printf("Image size: %d\n", bitmapInfoHeader->biSizeImage);
+    printf("Colors used: %d\n", bitmapInfoHeader->biClrUsed);
+    printf("----------------------------------------------------------------\n");
+
+    // Allocate buffer for a single line including padding
+    unsigned char *lineBuffer = (unsigned char *)calloc(bytesperline, 1);
+    if (!lineBuffer) {
+        fclose(filePtr);
+        return;
+    }
+
+    // Write image data line by line
+    int bytesPerPixel = bitmapInfoHeader->biBitCount / 8;
+    int width = bitmapInfoHeader->biWidth;
+    int height = bitmapInfoHeader->biHeight;
+    
+    for (int y = 0; y < height; y++) {
+        // Copy pixel data to line buffer
+        for (int x = 0; x < width; x++) {
+            for (int b = 0; b < bytesPerPixel; b++) {
+                int srcIndex = (y * width * bytesPerPixel) + (x * bytesPerPixel) + b;
+                int destIndex = (x * bytesPerPixel) + b;
+                lineBuffer[destIndex] = bitmapData[srcIndex];
+            }
+        }
+        // Write the line including padding
+        fwrite(lineBuffer, 1, bytesperline, filePtr);
+    }
+
+    // Clean up
+    free(lineBuffer);
     fclose(filePtr);
 }
-
 
 int createDirectory(const char *path) {
     struct stat st = {0};
@@ -249,7 +260,7 @@ void print_footer() {
 
 void writeOutPutfile()
 {
-    FILE* output_file = freopen("output.txt", "w", stdout);
+    FILE* output_file = freopen("HPS_output.txt", "w", stdout);
     if (output_file == NULL) {
         perror("Error redirecting stdout");
         return;

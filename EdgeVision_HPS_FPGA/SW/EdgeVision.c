@@ -72,7 +72,7 @@ unsigned char *LoadBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader
 
     //read in the bitmap image data
     bytesRead = fread(bitmapImage,1, bitmapInfoHeader->biSizeImage,filePtr);
-    printf("LOG: bytesRead :  %d\n", (int)bytesRead);
+    printf("\nLOG: bytesRead :  %d\n", (int)bytesRead);
 
     //make sure bitmap image data was read
     if (bitmapImage == NULL)
@@ -192,7 +192,7 @@ void print_footer() {
 
 void writeOutPutfile()
 {
-    FILE* output_file = freopen("output.txt", "w", stdout);
+    FILE* output_file = freopen("FPGA_HPS_output.txt", "w", stdout);
     if (output_file == NULL) {
         perror("Error redirecting stdout");
         return;

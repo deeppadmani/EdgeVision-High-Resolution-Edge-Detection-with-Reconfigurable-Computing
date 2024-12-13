@@ -1,0 +1,17 @@
+Analysis & Synthesis Status : Successful - Thu Dec 12 14:09:38 2024
+Quartus Prime Version : 22.1std.1 Build 917 02/14/2023 SC Lite Edition
+Revision Name : soc_system
+Top-level Entity Name : Sobel_Filter
+Family : Cyclone V
+Logic utilization (in ALMs) : N/A
+Total registers : 2768
+Total pins : 123
+Total virtual pins : 0
+Total block memory bits : 1,536
+Total DSP Blocks : 15
+Total HSSI RX PCSs : 0
+Total HSSI PMA RX Deserializers : 0
+Total HSSI TX PCSs : 0
+Total HSSI PMA TX Serializers : 0
+Total PLLs : 0
+Total DLLs : 1
