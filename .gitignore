@@ -2,7 +2,8 @@
 *.o
 
 # Executable
-FPGA_HPS
+SOBEL_HPS
+SOBEL_FPGA_HPS
 
 # Backup files
 *~
