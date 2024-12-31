@@ -1,5 +1,5 @@
 
-# EdgeVision-High-Resolution-Edge-Detection-with-Reconfigurable-Computing
+# EdgeVision:High Resolution Edge Detection with Reconfigurable Computing
 **EdgeVision** is a project that applies a Sobel filter to BMP images for edge detection. This filter is commonly used in image processing to highlight the edges by calculating the gradient of the image intensity at each pixel. The project is designed to work on an FPGA, making it suitable for high-speed, hardware-based image processing applications.
 
 ## Features
